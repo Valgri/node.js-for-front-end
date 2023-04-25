@@ -1,6 +1,6 @@
 const express = require('express');
 const { db } = require('../models');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 // Get user exercise logs
 router.get('/', (req, res) => {
@@ -53,7 +53,7 @@ router.get('/', (req, res) => {
                     logs: exerciseLogs,
                     count: totalExercises,
                 };
-                res.json(response);
+                return res.json(response);
             });
         });
     });

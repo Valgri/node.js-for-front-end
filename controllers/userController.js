@@ -12,7 +12,7 @@ router.post('/', (req, res) => {
         if (err) {
             return res.status(400).json({ error: 'Username already taken' });
         }
-        res.json({ username, id: this.lastID });
+        return res.json({ username, id: this.lastID });
     });
 });
 

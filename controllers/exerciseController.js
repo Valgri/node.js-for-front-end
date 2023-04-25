@@ -1,6 +1,6 @@
 const express = require('express');
 const { db } = require('../models');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 // Add an exercise
 router.post('/', (req, res) => {
@@ -37,7 +37,7 @@ router.post('/', (req, res) => {
                     if (err) {
                         return res.status(400).json({ error: "Error adding exercise" });
                     }
-                    res.json({
+                    return res.json({
                         userId,
                         exerciseId: this.lastID,
                         description,
