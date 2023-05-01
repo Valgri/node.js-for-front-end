@@ -15,6 +15,24 @@ router.get('/', (req, res) => {
         let query = 'SELECT * FROM exercises WHERE userId = ?';
         let queryParams = [_id];
 
+        // Set default from and to values if not provided
+        if (!from) {
+            db.get('SELECT MIN(date) as minDate FROM exercises WHERE userId = ?', _id, (error, row) => {
+                if (!error && row && row.minDate) {
+                    query += ' AND date >= ?';
+                    queryParams.push(row.minDate);
+                }
+            });
+        }
+        if (!to) {
+            db.get('SELECT MAX(date) as maxDate FROM exercises WHERE userId = ?', _id, (error, row) => {
+                if (!error && row && row.maxDate) {
+                    query += ' AND date <= ?';
+                    queryParams.push(row.maxDate);
+                }
+            });
+        }
+
         // Add date filters to the query if provided
         if (from) {
             query += ' AND date >= ?';
@@ -25,36 +43,33 @@ router.get('/', (req, res) => {
             queryParams.push(to);
         }
 
-        // Count total exercises
-        db.get(`SELECT COUNT(*) as count FROM (${query})`, queryParams, (error, countRow) => {
-            const totalExercises = countRow.count;
+        // Add order by date in descending order
+        query += ' ORDER BY date ASC';
+
+        // Execute the query to fetch exercises
+        db.all(query, queryParams, (error, exercises) => {
+            if (error) {
+                return res.status(500).json({ error: 'Internal server error' });
+            }
 
             // Add limit to the query if provided
             if (limit) {
-                query += ' LIMIT ?';
-                queryParams.push(parseInt(limit));
+                exercises = exercises.slice(0, parseInt(limit));
             }
 
-            // Execute the query to fetch exercises
-            db.all(query, queryParams, (error, exercises) => {
-                if (error) {
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
-
-                // Build the response object
-                const exerciseLogs = exercises.map(exercise => ({
-                    id: exercise.id,
-                    description: exercise.description,
-                    duration: exercise.duration,
-                    date: exercise.date,
-                }));
-                const response = {
-                    ...row,
-                    logs: exerciseLogs,
-                    count: totalExercises,
-                };
-                return res.status(200).json(response);
-            });
+            // Build the response object
+            const exerciseLogs = exercises.map(exercise => ({
+                id: exercise.id,
+                description: exercise.description,
+                duration: exercise.duration,
+                date: exercise.date,
+            }));
+            const response = {
+                ...row,
+                logs: exerciseLogs,
+                count: exerciseLogs.length,
+            };
+            return res.status(200).json(response);
         });
     });
 });
